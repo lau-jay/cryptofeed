@@ -6,6 +6,9 @@
 
 Handles multiple cryptocurrency exchange data feeds and returns normalized and standardized results to client registered callbacks for events like trades, book updates, ticker updates, etc. Utilizes websockets when possible, but can also poll data via REST endpoints if a websocket is not provided.
 
+## Acknowledgments
+This product includes software developed by Bryant Moscon (http://www.bryantmoscon.com/).
+
 ## Supported exchanges
 
 * [AscendEX](https://ascendex.com/)
@@ -174,19 +177,3 @@ See more discussion of package installation in [INSTALL.md](https://github.com/b
 Cryptofeed supports some REST interfaces for retrieving real-time and historical data, as well as order placement and account management. These are integrated into the exchange classes directly. You can view the supported methods by calling the `info()` method on any exchange. The methods for interacting with the exchange RET endpoints exist in two flavors, the synchronous methods (suffixed with `_sync`) as well as the asynchronous which can be utilized with asyncio. For more information see the [documentation](docs/rest.md).
 
 
-## Future Work
-
-There are a lot of planned features, new exchanges, etc planned! If you'd like to discuss ongoing development, please join the [discord](https://discord.gg/zaBYaGAYfR) or open a thread in the [discussions](https://github.com/bmoscon/cryptofeed/discussions) in GitHub.
-
-## Contributing
-
-Issues and PRs are welcomed!
-
-Cryptofeed wouldn't be possible without the help of many [contributors](AUTHORS.md)! I owe them and all other contributors my thanks!
-
-## Donations / Support
-
-Support and donations are appreciated but not required. You can donate via [GitHub Sponsors](https://github.com/sponsors/bmoscon), or via the addresses below:
-
-* Bitcoin: bc1qm0kxz8hqacaglku5fjhfe9a5hjnuyfwk02lsyr
-* Ethereum: 0x690709FEe13eEce9E7852089BB2D53Ae5D073154

@@ -1,9 +1,11 @@
-'''
+"""
 Copyright (C) 2017-2025 Bryant Moscon - bmoscon@gmail.com
 
 Please see the LICENSE file for the terms and conditions
 associated with this software.
-'''
+Copyright (C) 2025 Jay Lau - cappyclear@gmail.com
+"""
+
 import os
 import sys
 
@@ -28,7 +30,8 @@ def get_long_description():
 class Test(TestCommand):
     def run_tests(self):
         import pytest
-        errno = pytest.main(['tests/'])
+
+        errno = pytest.main(["tests/"])
         sys.exit(errno)
 
 
@@ -37,32 +40,75 @@ define_macros = []
 
 # comment out line to compile with type check assertions
 # verify value at runtime with cryptofeed.types.COMPILED_WITH_ASSERTIONS
-define_macros.append(('CYTHON_WITHOUT_ASSERTIONS', None))
+define_macros.append(("CYTHON_WITHOUT_ASSERTIONS", None))
 
-extension = Extension("cryptofeed.types", ["cryptofeed/types.pyx"],
-                      extra_compile_args=extra_compile_args,
-                      define_macros=define_macros)
+extension = Extension(
+    "cryptofeed.types",
+    ["cryptofeed/types.pyx"],
+    extra_compile_args=extra_compile_args,
+    define_macros=define_macros,
+)
 
 setup(
-    name="cryptofeed",
+    name="Flowfire",
     ext_modules=cythonize([extension], language_level=3, force=True),
-    version="2.4.1",
-    author="Bryant Moscon",
-    author_email="bmoscon@gmail.com",
+    version="0.1.0",
+    author="Jay Lau",
+    author_email="cappyclear@gmail.com",
     description="Cryptocurrency Exchange Websocket Data Feed Handler",
     long_description=get_long_description(),
     long_description_content_type="text/markdown",
     license="XFree86",
-    keywords=["cryptocurrency", "bitcoin", "btc", "feed handler", "market feed", "market data", "crypto assets",
-              "Trades", "Tickers", "BBO", "Funding", "Open Interest", "Liquidation", "Order book", "Bid", "Ask",
-              "fmfw.io", "Bitfinex", "bitFlyer", "AscendEX", "Bitstamp", "Blockchain.com", "Bybit",
-              "Binance", "Binance Delivery", "Binance Futures", "Binance US", "BitMEX", "Coinbase", "Deribit", "EXX",
-              "Gate.io", "Gemini", "HitBTC", "Huobi", "Huobi DM", "Huobi Swap", "Kraken",
-              "Kraken Futures", "OKCoin", "OKX", "Poloniex", "ProBit", "Upbit"],
-    url="https://github.com/bmoscon/cryptofeed",
-    packages=find_packages(exclude=['tests*']),
-    cmdclass={'test': Test},
-    python_requires='>=3.9',
+    keywords=[
+        "cryptocurrency",
+        "bitcoin",
+        "btc",
+        "feed handler",
+        "market feed",
+        "market data",
+        "crypto assets",
+        "Trades",
+        "Tickers",
+        "BBO",
+        "Funding",
+        "Open Interest",
+        "Liquidation",
+        "Order book",
+        "Bid",
+        "Ask",
+        "fmfw.io",
+        "Bitfinex",
+        "bitFlyer",
+        "AscendEX",
+        "Bitstamp",
+        "Blockchain.com",
+        "Bybit",
+        "Binance",
+        "Binance Delivery",
+        "Binance Futures",
+        "Binance US",
+        "BitMEX",
+        "Coinbase",
+        "Deribit",
+        "EXX",
+        "Gate.io",
+        "Gemini",
+        "HitBTC",
+        "Huobi",
+        "Huobi DM",
+        "Huobi Swap",
+        "Kraken",
+        "Kraken Futures",
+        "OKCoin",
+        "OKX",
+        "Poloniex",
+        "ProBit",
+        "Upbit",
+    ],
+    url="https://github.com/lau-jay/cryptofeed",
+    packages=find_packages(exclude=["tests*"]),
+    cmdclass={"test": Test},
+    python_requires=">=3.9",
     classifiers=[
         "Intended Audience :: Developers",
         "Development Status :: 4 - Beta",
@@ -83,7 +129,7 @@ setup(
         "yapic.json>=1.6.3",
         'uvloop ; platform_system!="Windows"',
         "order_book>=0.6.0",
-        "aiodns>=1.1"  # aiodns speeds up DNS resolving
+        "aiodns>=1.1",  # aiodns speeds up DNS resolving
     ],
     extras_require={
         "arctic": ["arctic", "pandas"],
@@ -91,7 +137,7 @@ setup(
         "kafka": ["aiokafka>=0.7.0"],
         "mongo": ["motor"],
         "postgres": ["asyncpg"],
-        'mysql': ['asyncmy'],
+        "mysql": ["asyncmy"],
         "quasardb": ["quasardb", "numpy"],
         "rabbit": ["aio_pika", "pika"],
         "redis": ["hiredis", "redis>=4.5.1"],

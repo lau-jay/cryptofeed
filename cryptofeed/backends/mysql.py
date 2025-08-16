@@ -1,9 +1,10 @@
-'''
-Copyright (C) 2017-2025 Bryant Moscon - bmoscon@gmail.com
+"""
+Copyright (C) 2025 Jay Lau - cappyclear@gmail.com
 
 Please see the LICENSE file for the terms and conditions
 associated with this software.
-'''
+"""
+
 import logging
 from collections import defaultdict
 from datetime import datetime as dt
@@ -14,15 +15,39 @@ from asyncmy.cursors import DictCursor
 from pymysql.err import IntegrityError
 from yapic import json
 
-from cryptofeed.backends.backend import BackendBookCallback, BackendCallback, BackendQueue
-from cryptofeed.defines import CANDLES, FUNDING, OPEN_INTEREST, TICKER, TRADES, LIQUIDATIONS, INDEX
+from cryptofeed.backends.backend import (
+    BackendBookCallback,
+    BackendCallback,
+    BackendQueue,
+)
+from cryptofeed.defines import (
+    CANDLES,
+    FUNDING,
+    OPEN_INTEREST,
+    TICKER,
+    TRADES,
+    LIQUIDATIONS,
+    INDEX,
+)
 
 
-LOG = logging.getLogger('feedhandler')
+LOG = logging.getLogger("feedhandler")
 
 
 class MySQLCallback(BackendQueue):
-    def __init__(self, host='127.0.0.1', user=None, pw=None, db=None, port=None, table=None, custom_columns: dict = None, none_to=None, numeric_type=float, **kwargs):
+    def __init__(
+        self,
+        host="127.0.0.1",
+        user=None,
+        pw=None,
+        db=None,
+        port=None,
+        table=None,
+        custom_columns: dict = None,
+        none_to=None,
+        numeric_type=float,
+        **kwargs,
+    ):
         """
         host: str
             Database host address
@@ -52,12 +77,22 @@ class MySQLCallback(BackendQueue):
         # Parse INSERT statement with user-specified column names
         # Performed at init to avoid repeated list joins
         self.placeholders = "(%s,%s,%s,%s,%s,%s)"
-        self.insert_statement = f"INSERT INTO {self.table} ({','.join([v for v in self.custom_columns.values()])}) VALUES " if custom_columns else None
+        self.insert_statement = (
+            f"INSERT INTO {self.table} ({','.join([v for v in self.custom_columns.values()])}) VALUES "
+            if custom_columns
+            else None
+        )
         self.running = True
 
     async def _connect(self):
         if self.conn is None:
-            self.conn = await asyncmy.connect(user=self.user, password=self.pw, database=self.db, host=self.host, port=self.port)
+            self.conn = await asyncmy.connect(
+                user=self.user,
+                password=self.pw,
+                database=self.db,
+                host=self.host,
+                port=self.port,
+            )
 
     def format(self, data: Tuple):
         feed = data[0]
@@ -69,15 +104,14 @@ class MySQLCallback(BackendQueue):
         return (None, timestamp, receipt_timestamp, feed, symbol, json.dumps(data))
 
     def _custom_format(self, data: Tuple):
-
         d = {
             **data[4],
             **{
-                'exchange': data[0],
-                'symbol': data[1],
-                'timestamp': data[2],
-                'receipt': data[3],
-            }
+                "exchange": data[0],
+                "symbol": data[1],
+                "timestamp": data[2],
+                "receipt": data[3],
+            },
         }
         self.placeholders = f"({','.join(['%s' for _ in self.custom_columns.keys()])})"
 
@@ -88,7 +122,7 @@ class MySQLCallback(BackendQueue):
             if isinstance(value, bool):
                 return int(value)
             if isinstance(value, dt):
-                return value.strftime('%Y-%m-%d %H:%M:%S.%f')
+                return value.strftime("%Y-%m-%d %H:%M:%S.%f")
             if isinstance(value, (int, float)):
                 return str(value)
             return str(value)
@@ -105,9 +139,13 @@ class MySQLCallback(BackendQueue):
                 if len(updates) > 0:
                     batch = []
                     for data in updates:
-                        ts = dt.utcfromtimestamp(data['timestamp']) if data['timestamp'] else None
-                        rts = dt.utcfromtimestamp(data['receipt_timestamp'])
-                        batch.append((data['exchange'], data['symbol'], ts, rts, data))
+                        ts = (
+                            dt.utcfromtimestamp(data["timestamp"])
+                            if data["timestamp"]
+                            else None
+                        )
+                        rts = dt.utcfromtimestamp(data["receipt_timestamp"])
+                        batch.append((data["exchange"], data["symbol"], ts, rts, data))
                     await self.write_batch(batch)
 
     async def write_batch(self, updates: list):
@@ -117,15 +155,19 @@ class MySQLCallback(BackendQueue):
         async with self.conn.cursor(cursor=DictCursor) as cursor:
             try:
                 if self.custom_columns:
-                    await cursor.executemany(self.insert_statement + self.placeholders, values)
+                    await cursor.executemany(
+                        self.insert_statement + self.placeholders, values
+                    )
                 else:
-                    await cursor.executemany(f"INSERT INTO {self.table} VALUES {self.placeholders}", values)
+                    await cursor.executemany(
+                        f"INSERT INTO {self.table} VALUES {self.placeholders}", values
+                    )
 
             except IntegrityError:
                 # when restarting a subscription, some exchanges will re-publish a few messages
                 pass
             except Exception:
-                LOG.error(f'INSERT INTO {self.table}: ', exc_info=True)
+                LOG.error(f"INSERT INTO {self.table}: ", exc_info=True)
             else:
                 await cursor.commit()
 
@@ -138,9 +180,20 @@ class TradeMySQL(MySQLCallback, BackendCallback):
             return self._custom_format(data)
         else:
             exchange, symbol, timestamp, receipt, data = data
-            id = f"'{data['id']}'" if data['id'] else None
-            otype = f"'{data['type']}'" if data['type'] else None
-            return (None, f'{timestamp}', f'{receipt}', exchange, symbol, data['side'], data['amount'], data['price'], id, otype)
+            id = f"'{data['id']}'" if data["id"] else None
+            otype = f"'{data['type']}'" if data["type"] else None
+            return (
+                None,
+                f"{timestamp}",
+                f"{receipt}",
+                exchange,
+                symbol,
+                data["side"],
+                data["amount"],
+                data["price"],
+                id,
+                otype,
+            )
 
 
 class FundingMySQL(MySQLCallback, BackendCallback):
@@ -148,13 +201,29 @@ class FundingMySQL(MySQLCallback, BackendCallback):
 
     def format(self, data: Tuple):
         if self.custom_columns:
-            if data[4]['next_funding_time']:
-                data[4]['next_funding_time'] = dt.utcfromtimestamp(data[4]['next_funding_time'])
+            if data[4]["next_funding_time"]:
+                data[4]["next_funding_time"] = dt.utcfromtimestamp(
+                    data[4]["next_funding_time"]
+                )
             return self._custom_format(data)
         else:
             exchange, symbol, timestamp, receipt, data = data
-            ts = dt.utcfromtimestamp(data['next_funding_time']) if data['next_funding_time'] else None
-            return (None, f'{timestamp}', f'{receipt}', exchange, symbol, data['mark_price'] if data['mark_price'] else None, data['rate'], f'{ts}', data['predicted_rate'])
+            ts = (
+                dt.utcfromtimestamp(data["next_funding_time"])
+                if data["next_funding_time"]
+                else None
+            )
+            return (
+                None,
+                f"{timestamp}",
+                f"{receipt}",
+                exchange,
+                symbol,
+                data["mark_price"] if data["mark_price"] else None,
+                data["rate"],
+                f"{ts}",
+                data["predicted_rate"],
+            )
 
 
 class TickerMySQL(MySQLCallback, BackendCallback):
@@ -166,7 +235,15 @@ class TickerMySQL(MySQLCallback, BackendCallback):
         else:
             self.placeholders = f"({','.join(['%s' for _ in range(7)])})"
             exchange, symbol, timestamp, receipt, data = data
-            return (None, f"{timestamp}", f"{receipt}", exchange, symbol, data['bid'], data['ask'])
+            return (
+                None,
+                f"{timestamp}",
+                f"{receipt}",
+                exchange,
+                symbol,
+                data["bid"],
+                data["ask"],
+            )
 
 
 class OpenInterestMySQL(MySQLCallback, BackendCallback):
@@ -178,7 +255,14 @@ class OpenInterestMySQL(MySQLCallback, BackendCallback):
         else:
             self.placeholders = f"({','.join(['%s' for _ in range(6)])})"
             exchange, symbol, timestamp, receipt, data = data
-            return (None, f'{timestamp}', f'{receipt}', exchange, symbol, data['open_interest'])
+            return (
+                None,
+                f"{timestamp}",
+                f"{receipt}",
+                exchange,
+                symbol,
+                data["open_interest"],
+            )
 
 
 class IndexMySQL(MySQLCallback, BackendCallback):
@@ -190,7 +274,7 @@ class IndexMySQL(MySQLCallback, BackendCallback):
         else:
             self.placeholders = f"({','.join(['%s' for _ in range(6)])})"
             exchange, symbol, timestamp, receipt, data = data
-            return (None, f'{timestamp}', f'{receipt}', exchange, symbol, data['price'])
+            return (None, f"{timestamp}", f"{receipt}", exchange, symbol, data["price"])
 
 
 class LiquidationsMySQL(MySQLCallback, BackendCallback):
@@ -202,11 +286,22 @@ class LiquidationsMySQL(MySQLCallback, BackendCallback):
         else:
             self.placeholders = f"({','.join(['%s' for _ in range(10)])})"
             exchange, symbol, timestamp, receipt, data = data
-            return (None, f"{timestamp}", f"{receipt}", exchange, symbol, data['side'], data['quantity'], data['price'], data['id'], data['status'])
+            return (
+                None,
+                f"{timestamp}",
+                f"{receipt}",
+                exchange,
+                symbol,
+                data["side"],
+                data["quantity"],
+                data["price"],
+                data["id"],
+                data["status"],
+            )
 
 
 class BookMySQL(MySQLCallback, BackendBookCallback):
-    default_table = 'book'
+    default_table = "book"
 
     def __init__(self, *args, snapshots_only=False, snapshot_interval=1000, **kwargs):
         self.snapshots_only = snapshots_only
@@ -216,10 +311,10 @@ class BookMySQL(MySQLCallback, BackendBookCallback):
 
     def format(self, data: Tuple):
         if self.custom_columns:
-            if 'book' in data[4]:
-                data[4]['data'] = json.dumps({'snapshot': data[4]['book']})
+            if "book" in data[4]:
+                data[4]["data"] = json.dumps({"snapshot": data[4]["book"]})
             else:
-                data[4]['data'] = json.dumps({'delta': data[4]['delta']})
+                data[4]["data"] = json.dumps({"delta": data[4]["delta"]})
             return self._custom_format(data)
         else:
             feed = data[0]
@@ -227,13 +322,20 @@ class BookMySQL(MySQLCallback, BackendBookCallback):
             timestamp = data[2]
             receipt_timestamp = data[3]
             data = data[4]
-            if 'book' in data:
-                data = {'snapshot': data['book']}
+            if "book" in data:
+                data = {"snapshot": data["book"]}
             else:
-                data = {'delta': data['delta']}
+                data = {"delta": data["delta"]}
 
             self.placeholders = f"({','.join(['%s' for _ in range(6)])})"
-            return (None, f"{timestamp}", f"{receipt_timestamp}", feed, symbol, json.dumps(data))
+            return (
+                None,
+                f"{timestamp}",
+                f"{receipt_timestamp}",
+                feed,
+                symbol,
+                json.dumps(data),
+            )
 
 
 class CandlesMySQL(MySQLCallback, BackendCallback):
@@ -241,17 +343,29 @@ class CandlesMySQL(MySQLCallback, BackendCallback):
 
     def format(self, data: Tuple):
         if self.custom_columns:
-            data[4]['start'] = dt.utcfromtimestamp(data[4]['start'])
-            data[4]['stop'] = dt.utcfromtimestamp(data[4]['stop'])
+            data[4]["start"] = dt.utcfromtimestamp(data[4]["start"])
+            data[4]["stop"] = dt.utcfromtimestamp(data[4]["stop"])
             return self._custom_format(data)
         else:
             self.placeholders = f"({','.join(['%s' for _ in range(15)])})"
             exchange, symbol, timestamp, receipt, data = data
 
-            open_ts = dt.utcfromtimestamp(data['start'])
-            close_ts = dt.utcfromtimestamp(data['stop'])
-            return (None, f"{timestamp}", f"{receipt}", exchange, symbol, open_ts, close_ts,
-                    data['interval'],
-                    data['trades'] if data['trades'] is not None else None,
-                    data['open'], data['close'], data['high'], data['low'], data['volume'],
-                    data['closed'] if data['closed'] else None)
+            open_ts = dt.utcfromtimestamp(data["start"])
+            close_ts = dt.utcfromtimestamp(data["stop"])
+            return (
+                None,
+                f"{timestamp}",
+                f"{receipt}",
+                exchange,
+                symbol,
+                open_ts,
+                close_ts,
+                data["interval"],
+                data["trades"] if data["trades"] is not None else None,
+                data["open"],
+                data["close"],
+                data["high"],
+                data["low"],
+                data["volume"],
+                data["closed"] if data["closed"] else None,
+            )
